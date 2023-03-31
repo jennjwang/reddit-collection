@@ -102,6 +102,11 @@ def download_and_process(file_url, mode, st_time):
     # download and pre-process original posts
     f_name  = pjoin('reddit_tmp', file_url.split('/')[-1])
     tries_left  = 4
+    processed_items = dict([(name, [])])
+    if mode == 'submissions':
+        key_list    = ['id', 'score', 'url', 'title', 'selftext', "subreddit", 'subreddit_id', "created_utc"]
+    else:
+        key_list    = ['id', 'link_id', 'parent_id', 'score', 'body', 'subreddit_id', "subreddit", "created_utc"]
     while tries_left:
         try:
             print("downloading %s %2f" % (f_name, time() - st_time))
@@ -116,13 +121,44 @@ def download_and_process(file_url, mode, st_time):
                 dctx            = zstd.ZstdDecompressor(max_window_size=2147483648)
                 stream_reader   = dctx.stream_reader(fh)
                 f   = io.TextIOWrapper(stream_reader, encoding='utf-8')
-            lines   = dict([(name, [])])
+            found = 0
+            old_found = 0
             for i, l in enumerate(f):
                 if i % 1000000 == 0:
-                    print("read %d lines, found %d" % (i, sum([len(ls) for ls in lines.values()])), time() - st_time)
+                    print("processed %d lines, found %d" % (i, found - old_found), time() - st_time)
+                    old_found = found
                 # for name in subreddit_names:
                 #     if name in l:
-                lines[name] += [l.strip()]
+                line = l.strip()
+                reddit_dct  = json.loads(line)
+                if reddit_dct.get('num_comments', 1) > 0 and reddit_dct.get('score', 0) and reddit_dct.get('score', 0) >= 2 and (mode == 'submissions' or valid_comment(reddit_dct)):
+                    reddit_res  = {}
+                    targeting = False
+                    for k in key_list:
+                        if k in ['title', 'selftext', 'body']:
+                            if reddit_dct[k].lower() in ['[removed]', '[deleted]']:
+                                reddit_dct[k]   = ''
+                            txt, url_list       = word_url_tokenize(reddit_dct[k])
+                            split_txt = txt.lower().split()
+                            if targeted_text(split_txt):
+                                targeting = True
+                            reddit_res[k]       = (' '.join(txt.split()), url_list)
+                            # reddit_res["target"] = targeting
+                        else:
+                            reddit_res[k]       = reddit_dct[k]
+                    # for k in key_list:
+                    #     print(reddit_res[k])
+                    #     if targeted_text(reddit_res[k]):
+                    #         targeting = True
+                    #         break
+                    if targeting:
+                    #     print("true")
+                        processed_items[name] += [reddit_res]
+                        found += 1
+
+
+            # print("hi")
+            # exit()
             if f_name.split('.')[-1] == 'zst':
                 fh.close()
             else:
@@ -134,39 +170,7 @@ def download_and_process(file_url, mode, st_time):
             print("failed reading file %s file, another %d tries" % (f_name, tries_left))
             os.remove(f_name)
             tries_left  -= 1
-    print("tokenizing and selecting %s %2f" % (f_name, time() - st_time))
-    processed_items = dict([(name, [])])
-    if mode == 'submissions':
-        key_list    = ['id', 'score', 'url', 'title', 'selftext', "subreddit", 'subreddit_id', "created_utc"]
-    else:
-        key_list    = ['id', 'link_id', 'parent_id', 'score', 'body', 'subreddit_id', "subreddit", "created_utc"]
-
-    for line in lines[name]:
-        reddit_dct  = json.loads(line)
-        if reddit_dct.get('num_comments', 1) > 0 and reddit_dct.get('score', 0) and reddit_dct.get('score', 0) >= 2 and (mode == 'submissions' or valid_comment(reddit_dct)):
-            reddit_res  = {}
-            targeting = False
-            for k in key_list:
-                if k in ['title', 'selftext', 'body']:
-                    if reddit_dct[k].lower() in ['[removed]', '[deleted]']:
-                        reddit_dct[k]   = ''
-                    txt, url_list       = word_url_tokenize(reddit_dct[k])
-                    split_txt = txt.lower().split()
-                    if targeted_text(split_txt):
-                        targeting = True
-                    reddit_res[k]       = (' '.join(txt.split()), url_list)
-                    # reddit_res["target"] = targeting
-                else:
-                    reddit_res[k]       = reddit_dct[k]
-            # for k in key_list:
-            #     print(reddit_res[k])
-            #     if targeted_text(reddit_res[k]):
-            #         targeting = True
-            #         break
-            if targeting:
-            #     print("true")
-                processed_items[name] += [reddit_res]
-    print("Total found %d" % (len(processed_items)), time() - st_time)
+    print("Total found %d" % (found), time() - st_time)
     # print(processed_items)
     return processed_items
 
