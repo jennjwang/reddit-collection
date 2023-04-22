@@ -1,3 +1,4 @@
 *.err
 *.out
 /reddit_tmp
+*.bin

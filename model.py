@@ -1,7 +1,6 @@
 from transformers import BertTokenizerFast, BertForSequenceClassification
 import csv
 import pandas as pd
-import numpy as np
 model_path = "./moralization-bert-base-uncased"
 tokenizer = BertTokenizerFast.from_pretrained(model_path)
 model = BertForSequenceClassification.from_pretrained(model_path)
@@ -27,8 +26,9 @@ def prediction_csv(filepath):
         prediction = get_prediction(df['text'][i])
         prediction_vals.append(prediction)
     df['Moralization'] = prediction_vals
-    df.to_csv
+    file_name = 'pred_{}'.format(filepath)
+    df.to_csv(file_name, index=False, header=True)
     return df
 
 if __name__ == '__main__':
-    prediction_csv('filepath')
+    prediction_csv('RC2013-1.csv')

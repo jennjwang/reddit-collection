@@ -2,3 +2,6 @@ bs4
 spacy
 lxml
 zstandard
+pandas
+transformers
+torch
