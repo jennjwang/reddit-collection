@@ -23,10 +23,9 @@
 #SBATCH --mem=60G
 #SBATCH -c 8
 #SBATCH -N 1
-#SBATCH --array=0-3
 
 # machine='ccv'
 
 source ~/cs4sc/bin/activate
-python3 test.py -sy 2009 -ey 2021 -sm 4 -em 12 -A
+python3 model.py
 deactivate
