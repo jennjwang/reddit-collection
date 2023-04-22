@@ -7,7 +7,6 @@
 
 
 # email error reports
-#SBATCH --mail-user=jennifer_wang2@brown.edu
 #SBATCH --mail-type=ALL
 
 # output file

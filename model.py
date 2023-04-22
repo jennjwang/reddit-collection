@@ -1,6 +1,8 @@
 from transformers import BertTokenizerFast, BertForSequenceClassification
 import csv
 import pandas as pd
+import os
+
 model_path = "./moralization-bert-base-uncased"
 tokenizer = BertTokenizerFast.from_pretrained(model_path)
 model = BertForSequenceClassification.from_pretrained(model_path)
@@ -16,7 +18,7 @@ def get_prediction(text):
     # executing argmax function to get the candidate label
     return [0,1][probs.argmax()] # 0 is Non-Moral, 1 is Moral
 
-def prediction_csv(filepath):
+def prediction_csv(filepath, fp):
     #CHANGE WITH REAL HEADERS
     header = ['a', 'b', 'c', 'd', 'text', 'e', 'f', 'g']
     df = pd.read_csv(filepath, names=header)
@@ -26,9 +28,16 @@ def prediction_csv(filepath):
         prediction = get_prediction(df['text'][i])
         prediction_vals.append(prediction)
     df['Moralization'] = prediction_vals
-    file_name = 'pred_{}'.format(filepath)
+    file_name = 'output/{}'.format(fp)
     df.to_csv(file_name, index=False, header=True)
     return df
 
 if __name__ == '__main__':
-    prediction_csv('RC2013-1.csv')
+    file_directories=  os.listdir("./data")
+    filenames = {}
+    for year in file_directories:
+        path = './data/' + year
+        filepaths = os.listdir(path)
+        for fp in filepaths:
+            new_path = path + '/' + fp
+            prediction_csv(new_path, fp)
