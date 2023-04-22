@@ -2,3 +2,4 @@
 *.out
 /reddit_tmp
 *.bin
+*.csv
